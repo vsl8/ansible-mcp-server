@@ -18,6 +18,7 @@ import yaml
 from mcp.server.fastmcp import FastMCP
 
 
+# Default MCP instance for decorator registration (host/port can be overridden in __main__)
 mcp = FastMCP("ansible-mcp")
 
 
@@ -2241,6 +2242,42 @@ def _extract_timestamp_from_log(log_line: str) -> Optional[datetime]:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="stdio")
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Ansible MCP Server")
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "sse"],
+        default="stdio",
+        help="Transport protocol: stdio (local) or sse (remote via HTTP)"
+    )
+    parser.add_argument(
+        "--host",
+        default="0.0.0.0",
+        help="Host to bind SSE server (default: 0.0.0.0)"
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port for SSE server (default: 8000)"
+    )
+    
+    args = parser.parse_args()
+    
+    # Use module-level mcp variable
+    if args.transport == "sse":
+        # Create new instance with custom host/port
+        mcp_sse = FastMCP("ansible-mcp", host=args.host, port=args.port)
+        # Copy all registered tools/resources from default mcp
+        mcp_sse._tool_manager = mcp._tool_manager
+        mcp_sse._resource_manager = mcp._resource_manager
+        mcp_sse._prompt_manager = mcp._prompt_manager
+        
+        print(f"Starting Ansible MCP Server with SSE transport on {args.host}:{args.port}", file=sys.stderr)
+        print(f"Connect clients to: http://{args.host}:{args.port}/sse", file=sys.stderr)
+        mcp_sse.run(transport="sse")
+    else:
+        mcp.run(transport="stdio")
 
 

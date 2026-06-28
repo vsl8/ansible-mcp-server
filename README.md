@@ -53,7 +53,34 @@ uv run python src/ansible_mcp/server.py --help
 
 ## Configuration
 
+### Transport Options
+
+The Ansible MCP Server supports two transport modes:
+
+1. **stdio (Local)** - For same-machine usage (default)
+   - Fastest performance
+   - Ideal for local development
+   - No network configuration needed
+
+2. **SSE (Remote)** - For remote Ansible servers
+   - Connect to remote Ansible installations
+   - HTTP-based Server-Sent Events protocol
+   - Supports multiple simultaneous clients
+   - See [Remote Setup Guide](Docs/REMOTE_SETUP.md) for detailed configuration
+
+#### Quick Remote Setup
+
+```bash
+# On remote Ansible server
+./setup-remote.sh
+
+# Or manually
+uv run python src/ansible_mcp/server.py --transport sse --host 0.0.0.0 --port 8000
+```
+
 ### For Visual Studio Code (VS Code)
+
+#### Local Configuration (stdio)
 
 VS Code uses the same MCP configuration as Cursor. Add to `~/.vscode/mcp.json` or your workspace settings:
 
@@ -81,7 +108,24 @@ VS Code uses the same MCP configuration as Cursor. Add to `~/.vscode/mcp.json` o
 
 **Note**: Ensure you have the MCP extension installed in VS Code. Search for "Model Context Protocol" in the VS Code Extensions marketplace.
 
+#### Remote Configuration (SSE)
+
+For connecting to a remote Ansible server:
+
+```json
+{
+  "mcpServers": {
+    "ansible-remote": {
+      "url": "http://your-ansible-server:8000/sse",
+      "transport": "sse"
+    }
+  }
+}
+```
+
 ### For Cursor IDE
+
+#### Local Configuration (stdio)
 
 Add to your Cursor MCP config file (`~/.cursor/mcp.json` or `<project>/.cursor/mcp.json`):
 
@@ -107,7 +151,24 @@ Add to your Cursor MCP config file (`~/.cursor/mcp.json` or `<project>/.cursor/m
 }
 ```
 
+#### Remote Configuration (SSE)
+
+For connecting to a remote Ansible server:
+
+```json
+{
+  "mcpServers": {
+    "ansible-remote": {
+      "url": "http://your-ansible-server:8000/sse",
+      "transport": "sse"
+    }
+  }
+}
+```
+
 ### For Claude Desktop
+
+#### Local Configuration (stdio)
 
 Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%/Claude/claude_desktop_config.json` (Windows):
 
@@ -133,7 +194,24 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 }
 ```
 
+#### Remote Configuration (SSE)
+
+For connecting to a remote Ansible server:
+
+```json
+{
+  "mcpServers": {
+    "ansible-remote": {
+      "url": "http://your-ansible-server:8000/sse",
+      "transport": "sse"
+    }
+  }
+}
+```
+
 ### For GitHub Copilot CLI
+
+#### Local Configuration (stdio)
 
 GitHub Copilot CLI supports MCP servers. Configure in `~/.github-copilot/config.json`:
 
