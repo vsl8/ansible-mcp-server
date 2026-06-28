@@ -52,10 +52,10 @@ CREATE_SERVICE=${CREATE_SERVICE:-n}
 if [ "$CREATE_SERVICE" = "y" ]; then
     echo -e "${GREEN}Creating systemd service...${NC}"
 
-    SERVICE_FILE="/etc/systemd/system/ansible-mcp.service"
-    ENV_FILE="$CURRENT_DIR/ansible-mcp.env"
     CURRENT_USER=$(whoami)
     CURRENT_DIR=$(pwd)
+    SERVICE_FILE="/etc/systemd/system/ansible-mcp.service"
+    ENV_FILE="$CURRENT_DIR/ansible-mcp.env"
 
     # Collect optional Ansible project environment variables
     echo
