@@ -1,3 +1,8 @@
+---
+name: ansible-mcp
+description: "Expert knowledge for developing and maintaining an Ansible MCP Server built with FastMCP. Covers 36 Ansible automation tools (playbooks, inventory, troubleshooting), Python 3.10+ patterns, uv package management, type hints, command execution, health diagnostics, and MCP protocol implementation. Use when working with Ansible automation, MCP server development, or troubleshooting Ansible infrastructure."
+---
+
 # Skills for Ansible MCP Server
 
 This document provides context for AI assistants (GitHub Copilot, etc.) to better understand and assist with the Ansible MCP Server project.
