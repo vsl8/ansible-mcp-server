@@ -1,5 +1,33 @@
 # Example MCP Configuration Files
 
+## Visual Studio Code (VS Code) Configuration
+
+Create or edit `~/.vscode/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "ansible-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/home/vsl8/Documents/git/github/ai-assisted-devops/ansible-mcp",
+        "run",
+        "python",
+        "src/ansible_mcp/server.py"
+      ],
+      "env": {
+        "MCP_ANSIBLE_PROJECT_ROOT": "/path/to/your/ansible/project",
+        "MCP_ANSIBLE_INVENTORY": "/path/to/your/ansible/project/inventory/hosts.ini",
+        "MCP_ANSIBLE_PROJECT_NAME": "my-project"
+      }
+    }
+  }
+}
+```
+
+**Note**: Install the MCP extension from VS Code Extensions marketplace by searching for "Model Context Protocol".
+
 ## Cursor Configuration
 
 Create or edit `~/.cursor/mcp.json`:
@@ -156,6 +184,95 @@ You can register multiple projects and switch between them:
     }
   }
 }
+```
+
+## GitHub Copilot CLI Configuration
+
+Create or edit `~/.github-copilot/config.json`:
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "ansible-mcp": {
+        "command": "uv",
+        "args": [
+          "--directory",
+          "/home/vsl8/Documents/git/github/ai-assisted-devops/ansible-mcp",
+          "run",
+          "python",
+          "src/ansible_mcp/server.py"
+        ],
+        "env": {
+          "MCP_ANSIBLE_PROJECT_ROOT": "/path/to/your/ansible/project",
+          "MCP_ANSIBLE_INVENTORY": "/path/to/your/ansible/project/inventory/hosts.ini",
+          "MCP_ANSIBLE_PROJECT_NAME": "my-project"
+        }
+      }
+    }
+  }
+}
+```
+
+### Using with GitHub Copilot CLI
+
+```bash
+# Initialize configuration directory
+mkdir -p ~/.github-copilot
+
+# Test the integration
+gh copilot explain "How do I use ansible-inventory tool?"
+
+# Get suggestions
+gh copilot suggest "Run health check on all servers"
+
+# Use specific tools
+gh copilot chat "List all hosts in my ansible inventory"
+```
+
+## Claude CLI Configuration
+
+Create or edit `~/.config/claude/config.json`:
+
+```json
+{
+  "mcpServers": {
+    "ansible-mcp": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/home/vsl8/Documents/git/github/ai-assisted-devops/ansible-mcp",
+        "run",
+        "python",
+        "src/ansible_mcp/server.py"
+      ],
+      "env": {
+        "MCP_ANSIBLE_PROJECT_ROOT": "/path/to/your/ansible/project",
+        "MCP_ANSIBLE_INVENTORY": "/path/to/your/ansible/project/inventory/hosts.ini",
+        "MCP_ANSIBLE_PROJECT_NAME": "my-project"
+      }
+    }
+  }
+}
+```
+
+### Using with Claude CLI
+
+```bash
+# Install Claude CLI if not installed
+npm install -g @anthropic-ai/claude-cli
+
+# Initialize configuration
+claude config init
+
+# Test MCP integration
+claude chat "Show me all ansible tools available"
+
+# Use specific tools
+claude chat "List all hosts in my inventory"
+
+# Run diagnostics
+claude chat "Run health check on web servers"
 ```
 
 ## Testing Configuration
