@@ -1,0 +1,102 @@
+{
+  ".claude/settings.local.json": {
+    "mtime": 1782727240.5877843,
+    "ast_hash": "cea682cb43220208b84e43ef9d37fce9",
+    "semantic_hash": "cea682cb43220208b84e43ef9d37fce9"
+  },
+  "pyproject.toml": {
+    "mtime": 1782636316.3385825,
+    "ast_hash": "d7e7f03e5a5b993225e30d260ae20793",
+    "semantic_hash": "d7e7f03e5a5b993225e30d260ae20793"
+  },
+  "setup-remote.sh": {
+    "mtime": 1782672226.044194,
+    "ast_hash": "acbd60ff392493fd6cc2eebb8f4f7e0e",
+    "semantic_hash": "acbd60ff392493fd6cc2eebb8f4f7e0e"
+  },
+  "src/ansible_mcp/__init__.py": {
+    "mtime": 1782636127.2091055,
+    "ast_hash": "bbb5d9daf4e409e7ea0370683e4f83ec",
+    "semantic_hash": "bbb5d9daf4e409e7ea0370683e4f83ec"
+  },
+  "src/ansible_mcp/server.py": {
+    "mtime": 1782644281.2230444,
+    "ast_hash": "0e518836c3a11a7bbd4ed4eac738b9cf",
+    "semantic_hash": "0e518836c3a11a7bbd4ed4eac738b9cf"
+  },
+  "test_transports.py": {
+    "mtime": 1782644326.8593085,
+    "ast_hash": "7de6cad6d74153e6f0bf89a6f58d9543",
+    "semantic_hash": "7de6cad6d74153e6f0bf89a6f58d9543"
+  },
+  ".copilot/skills/graphify/SKILL.md": {
+    "mtime": 1782728433.6600103,
+    "ast_hash": "2e44981722f69e3cd7838f03e9b43ef5",
+    "semantic_hash": "2e44981722f69e3cd7838f03e9b43ef5"
+  },
+  ".copilot/skills/graphify/references/add-watch.md": {
+    "mtime": 1782474111.9451137,
+    "ast_hash": "d59d027fe449f06aa03905a01184e779",
+    "semantic_hash": "d59d027fe449f06aa03905a01184e779"
+  },
+  ".copilot/skills/graphify/references/exports.md": {
+    "mtime": 1782474111.9452207,
+    "ast_hash": "9da2a2152e60a22f07f05fed5158f287",
+    "semantic_hash": "9da2a2152e60a22f07f05fed5158f287"
+  },
+  ".copilot/skills/graphify/references/extraction-spec.md": {
+    "mtime": 1782474111.9453425,
+    "ast_hash": "2e620982acb506f557538cdcfb1ef6da",
+    "semantic_hash": "2e620982acb506f557538cdcfb1ef6da"
+  },
+  ".copilot/skills/graphify/references/github-and-merge.md": {
+    "mtime": 1782474111.9454486,
+    "ast_hash": "cde13df085e4c492aeb7ba298a996d0d",
+    "semantic_hash": "cde13df085e4c492aeb7ba298a996d0d"
+  },
+  ".copilot/skills/graphify/references/hooks.md": {
+    "mtime": 1782474111.9455492,
+    "ast_hash": "3f545db6ce646650bb9de588f5512a27",
+    "semantic_hash": "3f545db6ce646650bb9de588f5512a27"
+  },
+  ".copilot/skills/graphify/references/query.md": {
+    "mtime": 1782474111.9456773,
+    "ast_hash": "9e5aadc2c57ab561bc56600fcfa70735",
+    "semantic_hash": "9e5aadc2c57ab561bc56600fcfa70735"
+  },
+  ".copilot/skills/graphify/references/transcribe.md": {
+    "mtime": 1782474111.9457903,
+    "ast_hash": "67b6a5fa6c0974e18f60db9f8932fbd8",
+    "semantic_hash": "67b6a5fa6c0974e18f60db9f8932fbd8"
+  },
+  ".copilot/skills/graphify/references/update.md": {
+    "mtime": 1782474111.945911,
+    "ast_hash": "c698309979460d0f02ba616417844399",
+    "semantic_hash": "c698309979460d0f02ba616417844399"
+  },
+  ".github/copilot-instructions.md": {
+    "mtime": 1782671496.4503555,
+    "ast_hash": "26ff818913a1437d3a26fd7427c8155c",
+    "semantic_hash": "26ff818913a1437d3a26fd7427c8155c"
+  },
+  ".github/skills/SKILLS.md": {
+    "mtime": 1782639585.1389403,
+    "ast_hash": "8dfd41cbe9bf1e7865847d33640039e0",
+    "semantic_hash": "8dfd41cbe9bf1e7865847d33640039e0"
+  },
+  "CLAUDE.md": {
+    "mtime": 1782671469.1047518,
+    "ast_hash": "78c67693ea154ff1ea43a096407bb467",
+    "semantic_hash": "78c67693ea154ff1ea43a096407bb467"
+  },
+  "Docs/project_summary.md": {
+    "mtime": 1782645474.2418547,
+    "ast_hash": "f39fd1ded8ba5c600add1c219b4c685c",
+    "semantic_hash": "f39fd1ded8ba5c600add1c219b4c685c"
+  },
+  "README.md": {
+    "mtime": 1782643993.8483815,
+    "ast_hash": "64876f314b1e741c03ff2fadbdc7ef84",
+    "semantic_hash": "64876f314b1e741c03ff2fadbdc7ef84"
+  }
+}
