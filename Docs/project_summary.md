@@ -572,6 +572,160 @@ Config:
 
 ---
 
+## 💬 How to Use — Prompt Guide for AI Assistants
+
+Once the Ansible MCP Server is configured in your AI assistant (VS Code Copilot, Claude, Cursor, etc.), you can interact with your Ansible infrastructure using natural language prompts. This section shows you **exactly what to type** to get started.
+
+### 🚀 Getting Started — Register Your First Project
+
+The first thing a new user should do is **register their Ansible project** so the MCP server knows where your playbooks, inventory, and roles live.
+
+#### Step 1: Register a Project
+
+> **Prompt:**
+> ```
+> Register my Ansible project called "homelab" with root path "/home/user/ansible-homelab"
+> and inventory at "/home/user/ansible-homelab/inventory/hosts.ini"
+> ```
+
+This tells the MCP server about your project. You can register multiple projects.
+
+#### Step 2: Make It the Default Project
+
+> **Prompt:**
+> ```
+> Register my project "production-infra" at "/opt/ansible/production" with inventory
+> "/opt/ansible/production/inventory/hosts.yml" and make it the default project
+> ```
+
+By setting a default, all subsequent commands will automatically use this project's paths and inventory — no need to specify them every time!
+
+#### Step 3: Verify Registration
+
+> **Prompt:**
+> ```
+> List all my registered Ansible projects
+> ```
+
+---
+
+### 📖 Sample Prompts for Every Tool
+
+Below are ready-to-use prompts for each of the 36 tools. Just copy, paste, and adjust paths/hostnames to your environment.
+
+---
+
+#### 🔧 Core Ansible Tools (17)
+
+| # | Tool | Sample Prompt |
+|---|------|---------------|
+| 1 | **register-project** | `Register my Ansible project named "webapp" with root at "/home/user/ansible-webapp", inventory at "/home/user/ansible-webapp/inventory/hosts.ini", and make it the default` |
+| 2 | **list-projects** | `List all my registered Ansible projects and show which one is the default` |
+| 3 | **project-playbooks** | `Show me all the playbooks available in my "webapp" project` |
+| 4 | **project-run-playbook** | `Run the playbook "deploy.yml" from my registered project "webapp" with check mode enabled` |
+| 5 | **project-bootstrap** | `Bootstrap my Ansible project at "/home/user/new-project" — install galaxy dependencies and show environment details` |
+| 6 | **create-playbook** | `Create an Ansible playbook that installs nginx on all webservers and saves it to "/home/user/ansible/playbooks/install-nginx.yml"` |
+| 7 | **validate-playbook** | `Validate the syntax of my playbook at "/home/user/ansible/playbooks/deploy.yml"` |
+| 8 | **ansible-playbook** | `Run the playbook "/home/user/ansible/site.yml" with inventory "/home/user/ansible/inventory/hosts.ini" in diff mode` |
+| 9 | **ansible-task** | `Run an ad-hoc task on all webservers to check disk usage using the shell module with command "df -h"` |
+| 10 | **ansible-role** | `Execute the "nginx" role on all hosts in the "webservers" group` |
+| 11 | **create-role-structure** | `Create a new Ansible role called "postgres" under "/home/user/ansible/roles"` |
+| 12 | **ansible-inventory** | `List all hosts and groups in my Ansible inventory` |
+| 13 | **ansible-ping** | `Ping all hosts in my inventory to check connectivity` |
+| 14 | **ansible-gather-facts** | `Gather system facts from all hosts in the "databases" group — show me OS, memory, and CPU info` |
+| 15 | **validate-yaml** | `Validate the YAML syntax of my files at "/home/user/ansible/playbooks/deploy.yml" and "/home/user/ansible/inventory/group_vars/all.yml"` |
+| 16 | **galaxy-install** | `Install all Ansible Galaxy roles and collections from requirements files in my project at "/home/user/ansible"` |
+| 17 | **galaxy-lock** | `Create a lock file for all installed Galaxy roles and collections in my project at "/home/user/ansible"` |
+
+---
+
+#### 📦 Inventory Management (6)
+
+| # | Tool | Sample Prompt |
+|---|------|---------------|
+| 1 | **inventory-parse** | `Parse my Ansible inventory and show me all groups, hosts, and their variables in detail` |
+| 2 | **inventory-graph** | `Show me a visual graph of my inventory structure — all groups and host relationships` |
+| 3 | **inventory-find-host** | `Find the host "db-server-01" in my inventory and show which groups it belongs to and its variables` |
+| 4 | **inventory-diff** | `Compare my staging inventory at "/home/user/ansible/inventory/staging" with production at "/home/user/ansible/inventory/production" and show differences` |
+| 5 | **ansible-test-idempotence** | `Test if my playbook "/home/user/ansible/playbooks/configure-nginx.yml" is idempotent — run it twice and check for changes on second run` |
+| 6 | **vault-encrypt** | `Encrypt the file "/home/user/ansible/group_vars/secrets.yml" using Ansible Vault with password file "/home/user/.vault_pass"` |
+
+**Additional Vault Operations:**
+
+| Tool | Sample Prompt |
+|------|---------------|
+| **vault-decrypt** | `Decrypt the vault-encrypted file "/home/user/ansible/group_vars/secrets.yml" using password file "/home/user/.vault_pass"` |
+| **vault-view** | `View the contents of my encrypted vault file "/home/user/ansible/group_vars/secrets.yml" without decrypting it permanently` |
+| **vault-rekey** | `Change the vault password for "/home/user/ansible/group_vars/secrets.yml" — old password file is "/home/user/.old_vault_pass" and new is "/home/user/.new_vault_pass"` |
+
+---
+
+#### 🔍 Troubleshooting & Diagnostics (13)
+
+| # | Tool | Sample Prompt |
+|---|------|---------------|
+| 1 | **ansible-remote-command** | `Run the command "systemctl status nginx" on all webservers with sudo privileges` |
+| 2 | **ansible-fetch-logs** | `Fetch the last 200 lines of "/var/log/nginx/error.log" from all webservers and filter for "502" errors` |
+| 3 | **ansible-service-manager** | `Restart the "nginx" service on host "web-01" and check its logs after restart` |
+| 4 | **ansible-diagnose-host** | `Run a comprehensive diagnostic on host "db-server-01" — check CPU, memory, disk, services, and network` |
+| 5 | **ansible-capture-baseline** | `Capture a system baseline snapshot called "pre-deployment" from all production servers` |
+| 6 | **ansible-compare-states** | `Compare the current state of "web-01" against the baseline snapshot I captured earlier` |
+| 7 | **ansible-auto-heal** | `The host "web-01" has symptoms: high memory usage and nginx not responding. Auto-heal it in dry-run mode first` |
+| 8 | **ansible-network-matrix** | `Test network connectivity between all webservers and database servers on ports 5432 and 443` |
+| 9 | **ansible-security-audit** | `Run a security audit on all production servers — check SSH config, firewall rules, and user permissions` |
+| 10 | **ansible-health-monitor** | `Monitor the health of all webservers for 5 minutes with 30-second intervals` |
+| 11 | **ansible-performance-baseline** | `Capture a performance baseline for "db-server-01" with a 60-second benchmark duration` |
+| 12 | **ansible-log-hunter** | `Search for patterns "ERROR" and "CRITICAL" in logs on all servers from the last 1 hour, check /var/log/syslog and /var/log/nginx/error.log` |
+| 13 | **ansible-change-tracker** | `Track what system changes have occurred on "web-01" since last week` |
+
+---
+
+### 🎯 Common Workflow Examples
+
+#### Workflow 1: New Project Setup
+```
+1. "Register my Ansible project 'my-infra' at '/home/user/infra' with inventory '/home/user/infra/hosts.ini' and make it the default"
+2. "Bootstrap my project at '/home/user/infra' — install galaxy dependencies"
+3. "Ping all hosts in my inventory to verify connectivity"
+4. "Show me a visual graph of my inventory"
+```
+
+#### Workflow 2: Deploy & Verify
+```
+1. "Validate the syntax of my playbook '/home/user/infra/deploy-app.yml'"
+2. "Run the playbook 'deploy-app.yml' from my default project in check mode first"
+3. "Now run it for real — execute 'deploy-app.yml' with diff mode to see changes"
+4. "Test the idempotence of 'deploy-app.yml' to ensure it's safe to re-run"
+```
+
+#### Workflow 3: Troubleshoot a Server Issue
+```
+1. "Run a full diagnostic on host 'web-01' — check everything"
+2. "Fetch the last 500 lines of /var/log/syslog from web-01 and filter for errors"
+3. "Check if nginx is running on web-01 and restart it if needed"
+4. "Monitor web-01 health for 2 minutes to confirm it's stable after fix"
+```
+
+#### Workflow 4: Security & Compliance
+```
+1. "Run a security audit on all production servers"
+2. "Capture a baseline of all servers called 'june-2026-audit'"
+3. "Encrypt my secrets file with ansible-vault"
+4. "Check network connectivity matrix between web tier and database tier"
+```
+
+---
+
+### 💡 Tips for Effective Prompts
+
+1. **Be specific with host patterns** — Use group names (`webservers`, `databases`) or specific hosts (`web-01`)
+2. **Always register and set a default project** — This eliminates the need to specify paths in every command
+3. **Use check/dry-run mode first** — Ask for `--check` mode before running playbooks for real
+4. **Combine tools naturally** — "Diagnose web-01, then auto-heal if there are issues"
+5. **The AI remembers context** — After registering a project, you can just say "run the deploy playbook" without repeating paths
+
+---
+
 ## 🔒 Security Best Practices
 
 ### For Remote Deployments
