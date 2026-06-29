@@ -90,13 +90,23 @@
     "semantic_hash": "78c67693ea154ff1ea43a096407bb467"
   },
   "Docs/project_summary.md": {
-    "mtime": 1782645474.2418547,
-    "ast_hash": "f39fd1ded8ba5c600add1c219b4c685c",
-    "semantic_hash": "f39fd1ded8ba5c600add1c219b4c685c"
+    "mtime": 1782730372.2322369,
+    "ast_hash": "210e2cfd0d0dee5d0ceaf6e257bcd45c",
+    "semantic_hash": "210e2cfd0d0dee5d0ceaf6e257bcd45c"
   },
   "README.md": {
     "mtime": 1782643993.8483815,
     "ast_hash": "64876f314b1e741c03ff2fadbdc7ef84",
     "semantic_hash": "64876f314b1e741c03ff2fadbdc7ef84"
+  },
+  "docker-compose.yml": {
+    "mtime": 1782731527.3897324,
+    "ast_hash": "003eaccaefec709820d120e61b4fff35",
+    "semantic_hash": "003eaccaefec709820d120e61b4fff35"
+  },
+  "docs/DOCKER.md": {
+    "mtime": 1782731888.0379972,
+    "ast_hash": "521855fa3074add7c7ff2631142fd9a7",
+    "semantic_hash": "521855fa3074add7c7ff2631142fd9a7"
   }
 }
