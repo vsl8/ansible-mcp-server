@@ -1,3 +1,0 @@
-/home/vsl8/Documents/git/github/ai-assisted-devops/ansible-mcp/Docs/project_summary.md
-/home/vsl8/Documents/git/github/ai-assisted-devops/ansible-mcp/docker-compose.yml
-/home/vsl8/Documents/git/github/ai-assisted-devops/ansible-mcp/docs/DOCKER.md
