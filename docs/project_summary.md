@@ -550,9 +550,9 @@ Config:
 1. **inventory-parse** - Parse and analyze inventory structure
 2. **inventory-graph** - Generate inventory visualization
 3. **inventory-find-host** - Find host in inventory
-4. **inventory-diff** - Compare two inventory sources
-5. **ansible-test-idempotence** - Test playbook idempotence
-6. **vault-*** - Ansible Vault operations
+4. **inventory-add-host** - Add host to inventory with variables
+5. **inventory-diff** - Compare two inventory sources
+6. **ansible-test-idempotence** - Test playbook idempotence
 
 ### Troubleshooting & Diagnostics (13)
 
@@ -646,14 +646,15 @@ Below are ready-to-use prompts for each of the 36 tools. Just copy, paste, and a
 | 1 | **inventory-parse** | `Parse my Ansible inventory and show me all groups, hosts, and their variables in detail` |
 | 2 | **inventory-graph** | `Show me a visual graph of my inventory structure — all groups and host relationships` |
 | 3 | **inventory-find-host** | `Find the host "db-server-01" in my inventory and show which groups it belongs to and its variables` |
-| 4 | **inventory-diff** | `Compare my staging inventory at "/home/user/ansible/inventory/staging" with production at "/home/user/ansible/inventory/production" and show differences` |
-| 5 | **ansible-test-idempotence** | `Test if my playbook "/home/user/ansible/playbooks/configure-nginx.yml" is idempotent — run it twice and check for changes on second run` |
-| 6 | **vault-encrypt** | `Encrypt the file "/home/user/ansible/group_vars/secrets.yml" using Ansible Vault with password file "/home/user/.vault_pass"` |
+| 4 | **inventory-add-host** | `Add host dev-test-az1 ansible_host=10.112.51.196 to group test in current project inventory file` |
+| 5 | **inventory-diff** | `Compare my staging inventory at "/home/user/ansible/inventory/staging" with production at "/home/user/ansible/inventory/production" and show differences` |
+| 6 | **ansible-test-idempotence** | `Test if my playbook "/home/user/ansible/playbooks/configure-nginx.yml" is idempotent — run it twice and check for changes on second run` |
 
 **Additional Vault Operations:**
 
 | Tool | Sample Prompt |
 |------|---------------|
+| **vault-encrypt** | `Encrypt the file "/home/user/ansible/group_vars/secrets.yml" using Ansible Vault with password file "/home/user/.vault_pass"` |
 | **vault-decrypt** | `Decrypt the vault-encrypted file "/home/user/ansible/group_vars/secrets.yml" using password file "/home/user/.vault_pass"` |
 | **vault-view** | `View the contents of my encrypted vault file "/home/user/ansible/group_vars/secrets.yml" without decrypting it permanently` |
 | **vault-rekey** | `Change the vault password for "/home/user/ansible/group_vars/secrets.yml" — old password file is "/home/user/.old_vault_pass" and new is "/home/user/.new_vault_pass"` |
@@ -712,6 +713,47 @@ Below are ready-to-use prompts for each of the 36 tools. Just copy, paste, and a
 2. "Capture a baseline of all servers called 'june-2026-audit'"
 3. "Encrypt my secrets file with ansible-vault"
 4. "Check network connectivity matrix between web tier and database tier"
+```
+
+#### Workflow 5: Adding Hosts to Inventory
+
+The `inventory-add-host` tool allows you to dynamically add hosts to your Ansible inventory files without manual editing.
+
+**Basic Usage:**
+
+```
+1. "Add host dev-test-az1 ansible_host=10.112.51.196 to group test in current project inventory file"
+2. "Add host db-prod-01 ansible_host=192.168.1.50 ansible_user=admin ansible_port=2222 to group dbservers in my-project/inventory/production.yml"
+3. "Add host app-server-01 ansible_host=10.0.0.100 to group appservers in inventory/hosts.ini and create the group if it doesn't exist"
+```
+
+**Detailed Examples with inventory-add-host:**
+
+| Scenario | Prompt |
+|----------|--------|
+| **Add host to existing group** | `Add host dev-test-az1 ansible_host=10.112.51.196 to group test in current project inventory file` |
+| **Add host with multiple variables** | `Add host db-prod-01 ansible_host=192.168.1.50 ansible_user=admin ansible_port=2222 to group dbservers in my-project/inventory/production.yml` |
+| **Create group if missing** | `Add host app-server-01 ansible_host=10.0.0.100 to group appservers in inventory/hosts.ini and create the group if it doesn't exist` |
+| **Add to YAML inventory** | `Add host web-01 ansible_host=10.5.0.10 ansible_port=22 to group webservers in /etc/ansible/inventory/hosts.yml` |
+| **Multiple hosts workflow** | `Add hosts prod-app-01 ansible_host=10.1.1.5 and prod-app-02 ansible_host=10.1.1.6 to group production-apps in my-project/inventory/production.ini` |
+
+**Complete Workflow: Adding Hosts During Infrastructure Scaling**
+
+```
+1. "Show me current inventory structure"
+   → Use: inventory-graph
+
+2. "Add host new-db-01 ansible_host=10.2.0.50 ansible_user=root to group databases in my inventory and create the group if needed"
+   → Use: inventory-add-host (with create_group=true)
+
+3. "Verify new host was added and find all its details"
+   → Use: inventory-find-host
+
+4. "Ping the new host to verify connectivity"
+   → Use: ansible-ping
+
+5. "Run initial configuration playbook on new host"
+   → Use: ansible-playbook or ansible-task
 ```
 
 ---
