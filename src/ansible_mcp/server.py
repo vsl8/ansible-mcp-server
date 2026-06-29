@@ -583,6 +583,267 @@ def inventory_diff(left_project_root: Optional[str ] = None, left_ansible_cfg_pa
     return res
 
 
+@mcp.tool(name="inventory-add-host")
+def inventory_add_host(
+    host_entry: str,
+    group_name: str,
+    inventory_file: str,
+    create_group: Optional[bool] = None,
+    project_root: Optional[str] = None,
+    ansible_cfg_path: Optional[str] = None,
+    inventory_paths: Optional[List[str]] = None,
+) -> dict[str, Any]:
+    """Add a host to an inventory file under a specified group.
+
+    Args:
+        host_entry: Host definition (e.g., 'dev-test-az1 ansible_host=10.1.1.5')
+        group_name: Target group name (e.g., 'webservers')
+        inventory_file: Path to the inventory file to modify (INI or YAML format)
+        create_group: If True, create the group if it doesn't exist. If False/None and group missing, return error.
+        project_root: Project root folder
+        ansible_cfg_path: Explicit ansible.cfg path
+        inventory_paths: Inventory paths for validation
+
+    Returns:
+        Dict with ok, message, and details about the operation
+    """
+    # Parse host entry to extract hostname
+    parts = host_entry.strip().split()
+    if not parts:
+        return {"ok": False, "error": "Invalid host_entry: empty input"}
+    hostname = parts[0]
+    host_vars = " ".join(parts[1:]) if len(parts) > 1 else ""
+
+    # Resolve inventory file path
+    inv_path = Path(inventory_file).expanduser().resolve()
+    if project_root:
+        project_path = Path(project_root).expanduser().resolve()
+        if not inv_path.is_absolute():
+            inv_path = project_path / inventory_file
+
+    # Check if host already exists using inventory_find_host
+    find_result = inventory_find_host(
+        host=hostname,
+        project_root=project_root,
+        ansible_cfg_path=ansible_cfg_path,
+        inventory_paths=inventory_paths or [str(inv_path)],
+    )
+    if find_result.get("present"):
+        existing_groups = find_result.get("groups", [])
+        return {
+            "ok": False,
+            "error": "host_exists",
+            "message": f"Host '{hostname}' already exists in inventory",
+            "host": hostname,
+            "existing_groups": existing_groups,
+            "hostvars": find_result.get("hostvars", {}),
+        }
+
+    # Parse inventory to check if group exists
+    parsed = inventory_parse(
+        project_root=project_root,
+        ansible_cfg_path=ansible_cfg_path,
+        inventory_paths=inventory_paths or [str(inv_path)],
+    )
+    existing_groups = list(parsed.get("groups", {}).keys()) if parsed.get("ok") else []
+    group_exists = group_name in existing_groups
+
+    if not group_exists and not create_group:
+        return {
+            "ok": False,
+            "error": "group_not_found",
+            "message": f"Group '{group_name}' not found in inventory. Set create_group=true to create it.",
+            "group_name": group_name,
+            "existing_groups": sorted(existing_groups),
+        }
+
+    # Determine file format and add host
+    if not inv_path.exists():
+        # Create new inventory file
+        content = f"[{group_name}]\n{host_entry}\n"
+        inv_path.parent.mkdir(parents=True, exist_ok=True)
+        inv_path.write_text(content, encoding="utf-8")
+        return {
+            "ok": True,
+            "message": f"Created inventory file with host '{hostname}' in group '{group_name}'",
+            "host": hostname,
+            "group": group_name,
+            "inventory_file": str(inv_path),
+            "created_file": True,
+            "created_group": True,
+        }
+
+    # Read existing inventory
+    content = inv_path.read_text(encoding="utf-8")
+
+    # Detect format: YAML if starts with --- or contains yaml-like structure
+    is_yaml = content.strip().startswith("---") or inv_path.suffix in (".yml", ".yaml")
+
+    if is_yaml:
+        return _add_host_to_yaml_inventory(
+            inv_path, content, hostname, host_entry, host_vars, group_name, group_exists, create_group
+        )
+    else:
+        return _add_host_to_ini_inventory(
+            inv_path, content, hostname, host_entry, group_name, group_exists, create_group
+        )
+
+
+def _add_host_to_ini_inventory(
+    inv_path: Path,
+    content: str,
+    hostname: str,
+    host_entry: str,
+    group_name: str,
+    group_exists: bool,
+    create_group: Optional[bool],
+) -> dict[str, Any]:
+    """Add host to INI format inventory file."""
+    lines = content.splitlines()
+    new_lines: List[str] = []
+    group_header = f"[{group_name}]"
+    added = False
+    created_group = False
+    in_target_group = False
+    i = 0
+
+    while i < len(lines):
+        line = lines[i]
+        new_lines.append(line)
+
+        # Check if we're entering the target group
+        if line.strip().lower() == group_header.lower():
+            in_target_group = True
+            i += 1
+            # Add host entries until we hit another group or end
+            while i < len(lines):
+                next_line = lines[i]
+                # Check if next line is a new group header
+                if next_line.strip().startswith("[") and next_line.strip().endswith("]"):
+                    # Insert host before the new group
+                    new_lines.append(host_entry)
+                    added = True
+                    in_target_group = False
+                    break
+                new_lines.append(next_line)
+                i += 1
+            # If we reached end of file while in target group
+            if in_target_group and not added:
+                new_lines.append(host_entry)
+                added = True
+            continue
+        i += 1
+
+    # If group doesn't exist and create_group is True, add new group at end
+    if not added and create_group:
+        if new_lines and new_lines[-1].strip():
+            new_lines.append("")  # Add blank line before new group
+        new_lines.append(group_header)
+        new_lines.append(host_entry)
+        added = True
+        created_group = True
+
+    if not added:
+        return {
+            "ok": False,
+            "error": "failed_to_add",
+            "message": f"Failed to add host to group '{group_name}'",
+        }
+
+    # Write updated content
+    final_content = "\n".join(new_lines)
+    if not final_content.endswith("\n"):
+        final_content += "\n"
+    inv_path.write_text(final_content, encoding="utf-8")
+
+    return {
+        "ok": True,
+        "message": f"Added host '{hostname}' to group '{group_name}'",
+        "host": hostname,
+        "group": group_name,
+        "inventory_file": str(inv_path),
+        "created_group": created_group,
+    }
+
+
+def _add_host_to_yaml_inventory(
+    inv_path: Path,
+    content: str,
+    hostname: str,
+    host_entry: str,
+    host_vars: str,
+    group_name: str,
+    group_exists: bool,
+    create_group: Optional[bool],
+) -> dict[str, Any]:
+    """Add host to YAML format inventory file."""
+    try:
+        data = yaml.safe_load(content) or {}
+    except yaml.YAMLError as e:
+        return {"ok": False, "error": "yaml_parse_error", "message": str(e)}
+
+    created_group = False
+
+    # Navigate to 'all.children' structure or simple group structure
+    if "all" in data and isinstance(data["all"], dict):
+        children = data["all"].setdefault("children", {})
+        if group_name not in children:
+            if not create_group:
+                return {
+                    "ok": False,
+                    "error": "group_not_found",
+                    "message": f"Group '{group_name}' not found. Set create_group=true to create it.",
+                }
+            children[group_name] = {"hosts": {}}
+            created_group = True
+        group_data = children[group_name]
+    else:
+        # Simple structure: group at top level
+        if group_name not in data:
+            if not create_group:
+                return {
+                    "ok": False,
+                    "error": "group_not_found",
+                    "message": f"Group '{group_name}' not found. Set create_group=true to create it.",
+                }
+            data[group_name] = {"hosts": {}}
+            created_group = True
+        group_data = data[group_name]
+
+    # Ensure hosts dict exists
+    if not isinstance(group_data, dict):
+        group_data = {"hosts": {}}
+    hosts = group_data.setdefault("hosts", {})
+
+    # Parse host vars into dict
+    host_vars_dict: Dict[str, Any] = {}
+    if host_vars:
+        for part in host_vars.split():
+            if "=" in part:
+                key, val = part.split("=", 1)
+                # Try to parse as JSON/number/bool
+                try:
+                    host_vars_dict[key] = json.loads(val)
+                except (json.JSONDecodeError, ValueError):
+                    host_vars_dict[key] = val
+
+    # Add host
+    hosts[hostname] = host_vars_dict if host_vars_dict else None
+
+    # Write back
+    inv_path.write_text(yaml.safe_dump(data, sort_keys=False, default_flow_style=False), encoding="utf-8")
+
+    return {
+        "ok": True,
+        "message": f"Added host '{hostname}' to group '{group_name}'",
+        "host": hostname,
+        "group": group_name,
+        "inventory_file": str(inv_path),
+        "created_group": created_group,
+        "host_vars": host_vars_dict,
+    }
+
+
 @mcp.tool(name="ansible-test-idempotence")
 def ansible_test_idempotence(playbook_path: str, project_root: Optional[str ] = None, ansible_cfg_path: Optional[str ] = None, inventory_paths: Optional[List[str] ] = None, extra_vars: Optional[Dict[str, Any] ] = None, verbose: Optional[int ] = None) -> dict[str, Any]:
     """Run a playbook twice and ensure no changes on the second run. Returns recap and pass/fail."""
