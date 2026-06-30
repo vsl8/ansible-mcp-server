@@ -117,6 +117,7 @@ class ProjectDefinition:
     inventory: Optional[str] = None
     roles_paths: Optional[List[str]] = None
     collections_paths: Optional[List[str]] = None
+    playbooks_path: Optional[str] = None
     env: Optional[Dict[str, str]] = None
 
 @dataclass
@@ -126,6 +127,15 @@ class ServerConfiguration:
 ```
 
 **Config Storage**: `~/.config/mcp-ansible/config.json`
+
+**Fields**:
+- `name`: Project identifier
+- `root`: Project root directory (absolute path)
+- `inventory`: Optional default inventory file or directory
+- `roles_paths`: Optional list of custom Ansible roles directories
+- `collections_paths`: Optional list of custom Ansible collections directories
+- `playbooks_path`: Optional default location for discovering playbooks (absolute path or relative to root)
+- `env`: Optional environment variables to export for this project
 
 ### 2. Environment Variables
 - `MCP_ANSIBLE_PROJECT_ROOT`: Project directory
