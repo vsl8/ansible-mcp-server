@@ -75,6 +75,7 @@ class ProjectDefinition:
     inventory: Optional[str ] = None
     roles_paths: Optional[List[str] ] = None
     collections_paths: Optional[List[str] ] = None
+    playbooks_path: Optional[str ] = None
     env: Optional[Dict[str, str] ] = None
 
 
@@ -116,6 +117,7 @@ def _load_config() -> ServerConfiguration:
             inventory=cfg.get("inventory"),
             roles_paths=list(cfg.get("roles_paths") or []) or None,
             collections_paths=list(cfg.get("collections_paths") or []) or None,
+            playbooks_path=cfg.get("playbooks_path"),
             env=dict(cfg.get("env") or {}) or None,
         )
     defaults = dict(raw.get("defaults") or {})
@@ -994,7 +996,7 @@ def vault_rekey(file_paths: list[str] | str, project_root: Optional[str ] = None
 
 
 @mcp.tool(name="register-project")
-def register_project(name: str, root: str, inventory: Optional[str ] = None, roles_paths: Optional[List[str] ] = None, collections_paths: Optional[List[str] ] = None, env: Optional[Dict[str, str] ] = None, make_default: Optional[bool ] = None) -> dict[str, Any]:
+def register_project(name: str, root: str, inventory: Optional[str ] = None, roles_paths: Optional[List[str] ] = None, collections_paths: Optional[List[str] ] = None, playbooks_path: Optional[str ] = None, env: Optional[Dict[str, str] ] = None, make_default: Optional[bool ] = None) -> dict[str, Any]:
     """Register an existing Ansible project with this MCP server.
 
     Args:
@@ -1003,6 +1005,7 @@ def register_project(name: str, root: str, inventory: Optional[str ] = None, rol
         inventory: Optional default inventory file or directory path.
         roles_paths: Optional list to export via ANSIBLE_ROLES_PATH.
         collections_paths: Optional list to export via ANSIBLE_COLLECTIONS_PATHS.
+        playbooks_path: Optional default path for playbooks (relative to root or absolute).
         env: Optional extra environment variables to export for this project.
         make_default: If true, set this project as the default.
     Returns:
@@ -1015,6 +1018,7 @@ def register_project(name: str, root: str, inventory: Optional[str ] = None, rol
         inventory=str(Path(inventory).resolve()) if inventory else None,
         roles_paths=[str(Path(p).resolve()) for p in (roles_paths or [])] or None,
         collections_paths=[str(Path(p).resolve()) for p in (collections_paths or [])] or None,
+        playbooks_path=str(Path(playbooks_path).resolve()) if playbooks_path else None,
         env=env or None,
     )
     if make_default:
@@ -1035,15 +1039,18 @@ def list_projects() -> dict[str, Any]:
 
 @mcp.tool(name="project-playbooks")
 def project_playbooks(project: Optional[str ] = None) -> dict[str, Any]:
-    """Discover playbooks (YAML lists) under the project root."""
+    """Discover playbooks (YAML lists) under the project root or configured playbooks_path."""
     cfg = _load_config()
     defn = _resolve_project(cfg, project)
     if not defn:
         return {"ok": False, "error": "No project specified and no default set"}
-    root = Path(defn.root)
-    if not root.exists():
-        return {"ok": False, "error": f"Project root not found: {root}"}
-    return {"ok": True, "root": str(root), "playbooks": _discover_playbooks(root)}
+    
+    # Use playbooks_path if configured, otherwise use project root
+    search_root = Path(defn.playbooks_path) if defn.playbooks_path else Path(defn.root)
+    
+    if not search_root.exists():
+        return {"ok": False, "error": f"Playbooks path not found: {search_root}"}
+    return {"ok": True, "root": str(search_root), "playbooks_path": str(defn.playbooks_path) if defn.playbooks_path else None, "playbooks": _discover_playbooks(search_root)}
 
 
 @mcp.tool(name="project-run-playbook")
