@@ -550,9 +550,9 @@ Config:
 1. **inventory-parse** - Parse and analyze inventory structure
 2. **inventory-graph** - Generate inventory visualization
 3. **inventory-find-host** - Find host in inventory
-4. **inventory-diff** - Compare two inventory sources
-5. **ansible-test-idempotence** - Test playbook idempotence
-6. **vault-*** - Ansible Vault operations
+4. **inventory-add-host** - Add host to inventory with variables
+5. **inventory-diff** - Compare two inventory sources
+6. **ansible-test-idempotence** - Test playbook idempotence
 
 ### Troubleshooting & Diagnostics (13)
 
@@ -646,14 +646,15 @@ Below are ready-to-use prompts for each of the 36 tools. Just copy, paste, and a
 | 1 | **inventory-parse** | `Parse my Ansible inventory and show me all groups, hosts, and their variables in detail` |
 | 2 | **inventory-graph** | `Show me a visual graph of my inventory structure — all groups and host relationships` |
 | 3 | **inventory-find-host** | `Find the host "db-server-01" in my inventory and show which groups it belongs to and its variables` |
-| 4 | **inventory-diff** | `Compare my staging inventory at "/home/user/ansible/inventory/staging" with production at "/home/user/ansible/inventory/production" and show differences` |
-| 5 | **ansible-test-idempotence** | `Test if my playbook "/home/user/ansible/playbooks/configure-nginx.yml" is idempotent — run it twice and check for changes on second run` |
-| 6 | **vault-encrypt** | `Encrypt the file "/home/user/ansible/group_vars/secrets.yml" using Ansible Vault with password file "/home/user/.vault_pass"` |
+| 4 | **inventory-add-host** | `Add host dev-test-az1 ansible_host=10.112.51.196 to group test in current project inventory file` |
+| 5 | **inventory-diff** | `Compare my staging inventory at "/home/user/ansible/inventory/staging" with production at "/home/user/ansible/inventory/production" and show differences` |
+| 6 | **ansible-test-idempotence** | `Test if my playbook "/home/user/ansible/playbooks/configure-nginx.yml" is idempotent — run it twice and check for changes on second run` |
 
 **Additional Vault Operations:**
 
 | Tool | Sample Prompt |
 |------|---------------|
+| **vault-encrypt** | `Encrypt the file "/home/user/ansible/group_vars/secrets.yml" using Ansible Vault with password file "/home/user/.vault_pass"` |
 | **vault-decrypt** | `Decrypt the vault-encrypted file "/home/user/ansible/group_vars/secrets.yml" using password file "/home/user/.vault_pass"` |
 | **vault-view** | `View the contents of my encrypted vault file "/home/user/ansible/group_vars/secrets.yml" without decrypting it permanently` |
 | **vault-rekey** | `Change the vault password for "/home/user/ansible/group_vars/secrets.yml" — old password file is "/home/user/.old_vault_pass" and new is "/home/user/.new_vault_pass"` |
@@ -712,6 +713,47 @@ Below are ready-to-use prompts for each of the 36 tools. Just copy, paste, and a
 2. "Capture a baseline of all servers called 'june-2026-audit'"
 3. "Encrypt my secrets file with ansible-vault"
 4. "Check network connectivity matrix between web tier and database tier"
+```
+
+#### Workflow 5: Adding Hosts to Inventory
+
+The `inventory-add-host` tool allows you to dynamically add hosts to your Ansible inventory files without manual editing.
+
+**Basic Usage:**
+
+```
+1. "Add host dev-test-az1 ansible_host=10.112.51.196 to group test in current project inventory file"
+2. "Add host db-prod-01 ansible_host=192.168.1.50 ansible_user=admin ansible_port=2222 to group dbservers in my-project/inventory/production.yml"
+3. "Add host app-server-01 ansible_host=10.0.0.100 to group appservers in inventory/hosts.ini and create the group if it doesn't exist"
+```
+
+**Detailed Examples with inventory-add-host:**
+
+| Scenario | Prompt |
+|----------|--------|
+| **Add host to existing group** | `Add host dev-test-az1 ansible_host=10.112.51.196 to group test in current project inventory file` |
+| **Add host with multiple variables** | `Add host db-prod-01 ansible_host=192.168.1.50 ansible_user=admin ansible_port=2222 to group dbservers in my-project/inventory/production.yml` |
+| **Create group if missing** | `Add host app-server-01 ansible_host=10.0.0.100 to group appservers in inventory/hosts.ini and create the group if it doesn't exist` |
+| **Add to YAML inventory** | `Add host web-01 ansible_host=10.5.0.10 ansible_port=22 to group webservers in /etc/ansible/inventory/hosts.yml` |
+| **Multiple hosts workflow** | `Add hosts prod-app-01 ansible_host=10.1.1.5 and prod-app-02 ansible_host=10.1.1.6 to group production-apps in my-project/inventory/production.ini` |
+
+**Complete Workflow: Adding Hosts During Infrastructure Scaling**
+
+```
+1. "Show me current inventory structure"
+   → Use: inventory-graph
+
+2. "Add host new-db-01 ansible_host=10.2.0.50 ansible_user=root to group databases in my inventory and create the group if needed"
+   → Use: inventory-add-host (with create_group=true)
+
+3. "Verify new host was added and find all its details"
+   → Use: inventory-find-host
+
+4. "Ping the new host to verify connectivity"
+   → Use: ansible-ping
+
+5. "Run initial configuration playbook on new host"
+   → Use: ansible-playbook or ansible-task
 ```
 
 ---
@@ -1030,6 +1072,253 @@ MIT License - Same as original bsahane/mcp-ansible
 - Built with: [FastMCP](https://github.com/jlowin/fastmcp)
 - Package manager: [uv](https://github.com/astral-sh/uv)
 - Powered by: [Ansible](https://www.ansible.com/)
+
+---
+
+## 🤖 Using the Ansible Operator Agent
+
+The **`@ansible-operator`** agent is a custom GitHub Copilot CLI agent that acts as an Infrastructure Operator for your Ansible automation. It automatically uses your default registered project and intelligently selects the right tool based on your prompt.
+
+### Getting Started
+
+**Location:** `.github/agents/ansible-operator.md`
+
+**Invoke with:** `@ansible-operator <your request>`
+
+The agent automatically:
+1. Detects your default registered project (`ansible-ai-ops`)
+2. Uses the project's inventory and configuration
+3. Selects the appropriate MCP tool based on your intent
+4. Returns human-readable summaries with actionable insights
+
+---
+
+### 📌 Prompt Reference by Use Case
+
+#### Connectivity & Health Checks
+
+| What You Want | Example Prompt |
+|---------------|----------------|
+| Check if servers are reachable | `@ansible-operator ping all servers in the web group` |
+| Test specific host connectivity | `@ansible-operator is db-server-01 reachable?` |
+| Quick health check | `@ansible-operator check health of production servers` |
+| Comprehensive diagnostics | `@ansible-operator diagnose issues on dev-test-az1` |
+| Monitor system performance | `@ansible-operator monitor cpu and memory on web servers for 5 minutes` |
+
+**Example:**
+```
+@ansible-operator check if all test servers are up
+```
+
+---
+
+#### Playbook Execution
+
+| What You Want | Example Prompt |
+|---------------|----------------|
+| List available playbooks | `@ansible-operator show me all available playbooks` |
+| Run a specific playbook | `@ansible-operator run deploy-webapp.yml playbook` |
+| Dry-run (check mode) | `@ansible-operator run site.yml in check mode` |
+| Run on specific hosts | `@ansible-operator run nginx.yml on web-server-01 only` |
+| Run with extra variables | `@ansible-operator run deploy.yml with version=2.0.0` |
+
+**Example:**
+```
+@ansible-operator run the deploy playbook on staging servers in check mode first
+```
+
+---
+
+#### System Information & Facts
+
+| What You Want | Example Prompt |
+|---------------|----------------|
+| Get system facts | `@ansible-operator gather facts from database servers` |
+| Check OS version | `@ansible-operator what operating system is running on prod-app-01?` |
+| Get memory/CPU info | `@ansible-operator show system resources on web servers` |
+| Check disk usage | `@ansible-operator how much disk space is left on db-primary?` |
+
+**Example:**
+```
+@ansible-operator what's the system info for all hosts in the test group?
+```
+
+---
+
+#### Service Management
+
+| What You Want | Example Prompt |
+|---------------|----------------|
+| Check service status | `@ansible-operator is nginx running on web servers?` |
+| Restart a service | `@ansible-operator restart nginx on web-server-01` |
+| Stop a service | `@ansible-operator stop redis on cache-server` |
+| Start a service | `@ansible-operator start postgresql on db-primary` |
+| Enable service on boot | `@ansible-operator enable docker service on all servers` |
+
+**Example:**
+```
+@ansible-operator check status of nginx and restart if it's not running
+```
+
+---
+
+#### Inventory Operations
+
+| What You Want | Example Prompt |
+|---------------|----------------|
+| List all hosts | `@ansible-operator show me all hosts in the inventory` |
+| Show inventory structure | `@ansible-operator display the inventory graph` |
+| Find a specific host | `@ansible-operator find host web-server-03 in inventory` |
+| List hosts in a group | `@ansible-operator what servers are in the database group?` |
+| Compare inventories | `@ansible-operator compare staging and production inventories` |
+
+**Example:**
+```
+@ansible-operator list all hosts grouped by their roles
+```
+
+---
+
+#### Remote Command Execution
+
+| What You Want | Example Prompt |
+|---------------|----------------|
+| Run shell command | `@ansible-operator run "df -h" on all servers` |
+| Check running processes | `@ansible-operator show top 10 processes by CPU on web-01` |
+| Check network connections | `@ansible-operator show listening ports on db-server` |
+| Execute one-liner | `@ansible-operator run "systemctl status nginx" on web servers` |
+| Check logs inline | `@ansible-operator run "tail -20 /var/log/nginx/error.log" on web-01` |
+
+**Example:**
+```
+@ansible-operator check disk usage on all production servers
+```
+
+---
+
+#### Log Analysis & Troubleshooting
+
+| What You Want | Example Prompt |
+|---------------|----------------|
+| Fetch recent logs | `@ansible-operator get last 100 lines of nginx logs from web-01` |
+| Search for errors | `@ansible-operator find ERROR patterns in syslog on all servers` |
+| Analyze log patterns | `@ansible-operator hunt for connection timeout errors across web servers` |
+| Correlate events | `@ansible-operator correlate errors across web and database servers` |
+
+**Example:**
+```
+@ansible-operator search for authentication failures in the last hour on prod servers
+```
+
+---
+
+#### Security & Compliance
+
+| What You Want | Example Prompt |
+|---------------|----------------|
+| Security audit | `@ansible-operator run security audit on production servers` |
+| Check open ports | `@ansible-operator what ports are open on web-server-01?` |
+| Vulnerability check | `@ansible-operator check for security vulnerabilities on database servers` |
+| Network matrix | `@ansible-operator test network connectivity between web and db tiers` |
+
+**Example:**
+```
+@ansible-operator perform a security audit on all production infrastructure
+```
+
+---
+
+#### Baseline & Performance
+
+| What You Want | Example Prompt |
+|---------------|----------------|
+| Capture baseline | `@ansible-operator capture system baseline for web servers` |
+| Compare to baseline | `@ansible-operator compare current state to last baseline` |
+| Benchmark performance | `@ansible-operator run performance benchmark on db-primary` |
+| Detect drift | `@ansible-operator check for configuration drift on production` |
+
+**Example:**
+```
+@ansible-operator capture a baseline before the deployment, then compare after
+```
+
+---
+
+#### Auto-Healing & Remediation
+
+| What You Want | Example Prompt |
+|---------------|----------------|
+| Auto-fix issues | `@ansible-operator auto-heal problems on web-server-01` |
+| Fix specific issue | `@ansible-operator fix the disk space issue on db-server` |
+| Remediate with approval | `@ansible-operator diagnose and suggest fixes for cache-01` |
+
+**Example:**
+```
+@ansible-operator diagnose dev-test-az1 and fix any issues you find
+```
+
+---
+
+#### Project & Role Management
+
+| What You Want | Example Prompt |
+|---------------|----------------|
+| List registered projects | `@ansible-operator show all registered ansible projects` |
+| Bootstrap new project | `@ansible-operator create a new ansible project structure` |
+| Create a playbook | `@ansible-operator create a playbook to install docker` |
+| Create role structure | `@ansible-operator scaffold a new role called webserver` |
+| Install galaxy roles | `@ansible-operator install geerlingguy.docker role from galaxy` |
+
+**Example:**
+```
+@ansible-operator create a playbook that installs and configures nginx with SSL
+```
+
+---
+
+### 💡 Pro Tips
+
+1. **Be Specific About Hosts**: Use group names or host patterns
+   - ✅ `ping all servers in the web group`
+   - ✅ `check health of prod-*`
+   - ❌ `ping servers` (too vague)
+
+2. **Request Check Mode for Safety**: Add "check mode" or "dry run" for production
+   - `run deploy.yml in check mode on production`
+
+3. **Chain Operations**: The agent understands context
+   - `diagnose the issue, then fix it if safe`
+
+4. **Ask for Explanations**: Get insights, not just raw output
+   - `what does the health score mean for web-01?`
+
+5. **Specify Time Ranges for Logs**:
+   - `search for errors in the last 2 hours`
+
+---
+
+### ⚠️ Safety Behaviors
+
+The agent has built-in safety guidelines:
+
+| Scenario | Agent Behavior |
+|----------|----------------|
+| **Production deployments** | Asks for confirmation before running |
+| **Service restarts** | Confirms the action before executing |
+| **Auto-healing** | Shows what will be fixed before proceeding |
+| **Destructive commands** | Warns and requires explicit approval |
+| **Broad host patterns** | Asks to confirm scope ("all" or "*") |
+
+---
+
+### 🔧 Troubleshooting the Agent
+
+| Issue | Solution |
+|-------|----------|
+| Agent doesn't respond | Ensure MCP server is configured in Copilot CLI |
+| Tools not found | Verify `ansible-remote-*` tools are available |
+| Wrong project used | Check `@ansible-operator show registered projects` |
+| Connection failures | Verify SSH keys and inventory paths |
 
 ---
 
