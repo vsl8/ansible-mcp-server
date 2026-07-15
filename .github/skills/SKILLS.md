@@ -143,6 +143,7 @@ class ServerConfiguration:
 - `MCP_ANSIBLE_PROJECT_NAME`: Project identifier
 - `MCP_ANSIBLE_ROLES_PATH`: Custom roles paths
 - `MCP_ANSIBLE_COLLECTIONS_PATHS`: Custom collections paths
+- `MCP_ANSIBLE_PLAYBOOKS_PATH`: Default playbooks directory
 - `MCP_ANSIBLE_ENV_*`: Forwarded environment variables
 
 ### 3. Command Execution Pattern

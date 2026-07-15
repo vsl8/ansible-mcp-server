@@ -193,6 +193,7 @@ def _project_from_env() -> Optional["ProjectDefinition"]:
         return None
     name = os.environ.get("MCP_ANSIBLE_PROJECT_NAME", "env")
     inventory = os.environ.get("MCP_ANSIBLE_INVENTORY")
+    playbooks_path = os.environ.get("MCP_ANSIBLE_PLAYBOOKS_PATH")
     roles_paths = _split_paths(os.environ.get("MCP_ANSIBLE_ROLES_PATH"))
     collections_paths = _split_paths(os.environ.get("MCP_ANSIBLE_COLLECTIONS_PATHS"))
     # Capture any extra env with MCP_ANSIBLE_ENV_* prefix
@@ -204,6 +205,7 @@ def _project_from_env() -> Optional["ProjectDefinition"]:
         name=name,
         root=str(Path(root).expanduser().resolve()),
         inventory=str(Path(inventory).expanduser().resolve()) if inventory else None,
+        playbooks_path=str(Path(playbooks_path).expanduser().resolve()) if playbooks_path else None,
         roles_paths=roles_paths,
         collections_paths=collections_paths,
         env=extra_env or None,
@@ -1061,9 +1063,14 @@ def project_run_playbook(playbook_path: str, project: Optional[str ] = None, ext
     if not defn:
         return {"ok": False, "error": "No project specified and no default set"}
     env = _project_env(defn)
-    cwd = defn.root
+    playbooks_root = Path(defn.playbooks_path) if defn.playbooks_path else Path(defn.root)
+    if not playbooks_root.exists():
+        return {"ok": False, "error": f"Playbooks path not found: {playbooks_root}"}
+    requested_playbook = Path(playbook_path).expanduser()
+    resolved_playbook = requested_playbook if requested_playbook.is_absolute() else playbooks_root / requested_playbook
+    cwd = str(playbooks_root)
     return ansible_playbook(
-        playbook_path=str(Path(playbook_path).resolve()),
+        playbook_path=str(resolved_playbook.resolve()),
         inventory=defn.inventory,
         extra_vars=extra_vars,
         tags=tags,
@@ -2547,5 +2554,4 @@ if __name__ == "__main__":
         mcp_sse.run(transport="sse")
     else:
         mcp.run(transport="stdio")
-
 
