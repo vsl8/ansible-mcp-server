@@ -1,0 +1,498 @@
+---
+################################################################################
+# Production-Ready System Update Playbook
+# Purpose: Perform OS package updates across multiple environments with logging
+# Author: DevOps Team
+# Version: 1.0
+################################################################################
+
+- name: Multi-Environment System Update with Package Exclusions and Logging
+  hosts: "{{ target_env | default('all') }}"
+  become: true
+  gather_facts: true
+  
+  vars:
+    # Package Exclusion List - Edit this list to add/remove packages
+    # These packages will NOT be upgraded during the update process
+    excluded_packages:
+      - mysql-server
+      - postgresql
+    
+    # Log directory configuration
+    log_base_dir: "/tmp"
+    log_date_dir: "{{ log_base_dir }}/{{ ansible_date_time.date }}"
+    log_file_path: "{{ log_date_dir }}/{{ inventory_hostname }}"
+  
+  tasks:
+    ############################################################################
+    # STEP 1: Create Log Directory on Control Node
+    ############################################################################
+    - name: Create dated log directory on control node
+      delegate_to: localhost
+      become: false
+      ansible.builtin.file:
+        path: "{{ log_date_dir }}"
+        state: directory
+        mode: '0755'
+      run_once: true
+      tags:
+        - logging
+        - setup
+
+    ############################################################################
+    # STEP 2: OS Detection and Validation
+    ############################################################################
+    - name: Display detected OS information
+      ansible.builtin.debug:
+        msg: 
+          - "Target Host: {{ inventory_hostname }}"
+          - "OS Family: {{ ansible_os_family }}"
+          - "Distribution: {{ ansible_distribution }}"
+          - "Distribution Version: {{ ansible_distribution_version }}"
+      tags:
+        - debug
+        - validation
+
+    ############################################################################
+    # STEP 2.5: Capture Package State Before Updates
+    ############################################################################
+    - name: Capture installed package versions before Ubuntu/Debian update
+      ansible.builtin.shell: |
+        dpkg-query -W | sort
+      args:
+        executable: /bin/bash
+      when: ansible_os_family == "Debian"
+      register: debian_packages_before
+      changed_when: false
+      tags:
+        - update
+        - logging
+        - ubuntu
+        - debian
+
+    ############################################################################
+    # STEP 3: Ubuntu/Debian System Updates
+    ############################################################################
+    - name: Update apt cache on Ubuntu/Debian systems
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+      register: apt_cache_update
+      tags:
+        - update
+        - ubuntu
+        - debian
+
+    - name: Upgrade all packages on Ubuntu/Debian (with exclusions)
+      ansible.builtin.apt:
+        upgrade: dist
+        update_cache: yes
+        autoremove: yes
+        autoclean: yes
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+      when: 
+        - ansible_os_family == "Debian"
+        - excluded_packages | length == 0
+      register: apt_upgrade_result
+      tags:
+        - update
+        - ubuntu
+        - debian
+
+    - name: Upgrade packages on Ubuntu/Debian with exclusions
+      ansible.builtin.shell: |
+        export DEBIAN_FRONTEND=noninteractive
+        
+        # Hold packages (ignore errors if packages don't exist)
+        for pkg in {{ excluded_packages | join(' ') }}; do
+          apt-mark hold "$pkg" 2>/dev/null || echo "Package $pkg not found, skipping hold"
+        done
+        
+        # Run updates
+        apt-get update
+        apt-get dist-upgrade -y
+        apt-get autoremove -y
+        apt-get autoclean -y
+        
+        # Unhold packages (ignore errors if packages don't exist)
+        for pkg in {{ excluded_packages | join(' ') }}; do
+          apt-mark unhold "$pkg" 2>/dev/null || echo "Package $pkg not found, skipping unhold"
+        done
+      args:
+        executable: /bin/bash
+      when: 
+        - ansible_os_family == "Debian"
+        - excluded_packages | length > 0
+      register: apt_upgrade_with_exclusions
+      changed_when: "'0 upgraded' not in apt_upgrade_with_exclusions.stdout"
+      ignore_errors: false
+      tags:
+        - update
+        - ubuntu
+        - debian
+
+    ############################################################################
+    - name: Capture installed package versions after Ubuntu/Debian update
+      ansible.builtin.shell: |
+        dpkg-query -W | sort
+      args:
+        executable: /bin/bash
+      when: ansible_os_family == "Debian"
+      register: debian_packages_after
+      changed_when: false
+      tags:
+        - update
+        - logging
+        - ubuntu
+        - debian
+
+    - name: Determine changed packages on Ubuntu/Debian
+      ansible.builtin.shell: |
+        before_file=$(mktemp)
+        after_file=$(mktemp)
+        trap "rm -f $before_file $after_file" EXIT
+        printf "%s" "{{ debian_packages_before.stdout | default("") | b64encode }}" | base64 -d > "$before_file"
+        printf "%s" "{{ debian_packages_after.stdout | default("") | b64encode }}" | base64 -d > "$after_file"
+        comm -13 "$before_file" "$after_file"
+      args:
+        executable: /bin/bash
+      when: ansible_os_family == "Debian"
+      register: debian_package_changes
+      changed_when: false
+      tags:
+        - update
+        - logging
+        - ubuntu
+        - debian
+
+    ############################################################################
+    # STEP 4: RedHat/Rocky/CentOS System Updates
+    ############################################################################
+    - name: Capture installed package versions before RedHat/Rocky/CentOS update
+      ansible.builtin.shell: |
+        rpm -qa | sort
+      args:
+        executable: /bin/bash
+      when: ansible_os_family == "RedHat"
+      register: redhat_packages_before
+      changed_when: false
+      tags:
+        - update
+        - logging
+        - redhat
+        - rocky
+        - centos
+        - legacy
+    ############################################################################
+    - name: Upgrade all packages on RedHat/Rocky/CentOS (no exclusions)
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+        update_cache: yes
+      when: 
+        - ansible_os_family == "RedHat"
+        - ansible_distribution_major_version | int >= 8
+        - excluded_packages | length == 0
+      register: dnf_upgrade_result
+      tags:
+        - update
+        - redhat
+        - rocky
+        - centos
+
+    - name: Upgrade packages on RedHat/Rocky/CentOS with exclusions (DNF)
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+        update_cache: yes
+        exclude: "{{ excluded_packages | join(',') }}"
+      when: 
+        - ansible_os_family == "RedHat"
+        - ansible_distribution_major_version | int >= 8
+        - excluded_packages | length > 0
+      register: dnf_upgrade_with_exclusions
+      failed_when: 
+        - dnf_upgrade_with_exclusions.rc is defined
+        - dnf_upgrade_with_exclusions.rc != 0
+        - "'No package' not in (dnf_upgrade_with_exclusions.msg | default(''))"
+      tags:
+        - update
+        - redhat
+        - rocky
+        - centos
+        - centos
+
+    - name: Upgrade all packages on older RHEL/CentOS using YUM (no exclusions)
+      ansible.builtin.yum:
+        name: "*"
+        state: latest
+        update_cache: yes
+      when: 
+        - ansible_os_family == "RedHat"
+        - ansible_distribution_major_version | int < 8
+        - excluded_packages | length == 0
+      register: yum_upgrade_result
+      tags:
+        - update
+        - redhat
+        - centos
+        - legacy
+
+    - name: Upgrade packages on older RHEL/CentOS using YUM with exclusions
+      ansible.builtin.yum:
+        name: "*"
+        state: latest
+        update_cache: yes
+        exclude: "{{ excluded_packages | join(',') }}"
+      when: 
+        - ansible_os_family == "RedHat"
+        - ansible_distribution_major_version | int < 8
+        - excluded_packages | length > 0
+      register: yum_upgrade_with_exclusions
+      failed_when: 
+        - yum_upgrade_with_exclusions.rc is defined
+        - yum_upgrade_with_exclusions.rc != 0
+        - "'No package' not in (yum_upgrade_with_exclusions.msg | default(''))"
+      tags:
+        - update
+        - redhat
+        - centos
+        - legacy
+
+    ############################################################################
+    - name: Capture installed package versions after RedHat/Rocky/CentOS update
+      ansible.builtin.shell: |
+        rpm -qa | sort
+      args:
+        executable: /bin/bash
+      when: ansible_os_family == "RedHat"
+      register: redhat_packages_after
+      changed_when: false
+      tags:
+        - update
+        - logging
+        - redhat
+        - rocky
+        - centos
+        - legacy
+
+    - name: Determine changed packages on RedHat/Rocky/CentOS
+      ansible.builtin.shell: |
+        before_file=$(mktemp)
+        after_file=$(mktemp)
+        trap "rm -f $before_file $after_file" EXIT
+        printf "%s" "{{ redhat_packages_before.stdout | default("") | b64encode }}" | base64 -d > "$before_file"
+        printf "%s" "{{ redhat_packages_after.stdout | default("") | b64encode }}" | base64 -d > "$after_file"
+        comm -13 "$before_file" "$after_file"
+      args:
+        executable: /bin/bash
+      when: ansible_os_family == "RedHat"
+      register: redhat_package_changes
+      changed_when: false
+      tags:
+        - update
+        - logging
+        - redhat
+        - rocky
+        - centos
+        - legacy
+
+    ############################################################################
+    # STEP 5: Capture and Save Update Output to Log Files
+    ############################################################################
+    - name: Gather update results for Ubuntu/Debian systems
+      ansible.builtin.set_fact:
+        update_output: |
+          ================================================================================
+          SYSTEM UPDATE LOG
+          ================================================================================
+          Hostname: {{ inventory_hostname }}
+          IP Address: {{ ansible_default_ipv4.address | default('"'"'N/A'"'"') }}
+          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Date: {{ ansible_date_time.iso8601 }}
+          User: {{ ansible_user_id }}
+          ================================================================================
+
+          {% if apt_upgrade_with_exclusions is defined %}
+          UPDATE TYPE: Debian/Ubuntu with Package Exclusions
+          EXCLUDED PACKAGES: {{ excluded_packages | join('"'"', '"'"') }}
+          UPDATE TASK CHANGED: {{ apt_upgrade_with_exclusions.changed | default(false) }}
+
+          PACKAGE CHANGES:
+          {% if debian_package_changes is defined and (debian_package_changes.stdout | default('"'"''"'"') | trim) %}
+          {{ debian_package_changes.stdout }}
+          {% else %}
+          No package version changes detected.
+          {% endif %}
+
+          COMMAND OUTPUT:
+          {{ apt_upgrade_with_exclusions.stdout | default('"'"'No stdout captured.'"'"') }}
+
+          STDERR (if any):
+          {{ apt_upgrade_with_exclusions.stderr | default('"'"'None'"'"') }}
+          {% elif apt_upgrade_result is defined %}
+          UPDATE TYPE: Debian/Ubuntu (All Packages)
+          UPDATE TASK CHANGED: {{ apt_upgrade_result.changed | default(false) }}
+
+          PACKAGE CHANGES:
+          {% if debian_package_changes is defined and (debian_package_changes.stdout | default('"'"''"'"') | trim) %}
+          {{ debian_package_changes.stdout }}
+          {% else %}
+          No package version changes detected.
+          {% endif %}
+
+          APT MODULE RESULT:
+          {{ apt_upgrade_result | to_nice_json }}
+          {% else %}
+          UPDATE TYPE: No updates performed (Debian/Ubuntu)
+          STATUS: No Debian-based update task result was captured.
+          {% endif %}
+
+          ================================================================================
+          END OF LOG
+          ================================================================================
+      when: ansible_os_family == "Debian"
+      tags:
+        - logging
+
+    - name: Gather update results for RedHat/Rocky/CentOS systems
+      ansible.builtin.set_fact:
+        update_output: |
+          ================================================================================
+          SYSTEM UPDATE LOG
+          ================================================================================
+          Hostname: {{ inventory_hostname }}
+          IP Address: {{ ansible_default_ipv4.address | default('"'"'N/A'"'"') }}
+          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Date: {{ ansible_date_time.iso8601 }}
+          User: {{ ansible_user_id }}
+          ================================================================================
+
+          {% if dnf_upgrade_with_exclusions is defined %}
+          UPDATE TYPE: RedHat/Rocky/CentOS (DNF) with Package Exclusions
+          EXCLUDED PACKAGES: {{ excluded_packages | join('"'"', '"'"') }}
+          UPDATE TASK CHANGED: {{ dnf_upgrade_with_exclusions.changed | default(false) }}
+
+          PACKAGE CHANGES:
+          {% if redhat_package_changes is defined and (redhat_package_changes.stdout | default('"'"''"'"') | trim) %}
+          {{ redhat_package_changes.stdout }}
+          {% else %}
+          No package version changes detected.
+          {% endif %}
+
+          DNF MODULE RESULT:
+          {{ dnf_upgrade_with_exclusions | to_nice_json }}
+          {% elif dnf_upgrade_result is defined %}
+          UPDATE TYPE: RedHat/Rocky/CentOS (DNF - All Packages)
+          UPDATE TASK CHANGED: {{ dnf_upgrade_result.changed | default(false) }}
+
+          PACKAGE CHANGES:
+          {% if redhat_package_changes is defined and (redhat_package_changes.stdout | default('"'"''"'"') | trim) %}
+          {{ redhat_package_changes.stdout }}
+          {% else %}
+          No package version changes detected.
+          {% endif %}
+
+          DNF MODULE RESULT:
+          {{ dnf_upgrade_result | to_nice_json }}
+          {% elif yum_upgrade_with_exclusions is defined %}
+          UPDATE TYPE: RedHat/CentOS (YUM) with Package Exclusions
+          EXCLUDED PACKAGES: {{ excluded_packages | join('"'"', '"'"') }}
+          UPDATE TASK CHANGED: {{ yum_upgrade_with_exclusions.changed | default(false) }}
+
+          PACKAGE CHANGES:
+          {% if redhat_package_changes is defined and (redhat_package_changes.stdout | default('"'"''"'"') | trim) %}
+          {{ redhat_package_changes.stdout }}
+          {% else %}
+          No package version changes detected.
+          {% endif %}
+
+          YUM MODULE RESULT:
+          {{ yum_upgrade_with_exclusions | to_nice_json }}
+          {% elif yum_upgrade_result is defined %}
+          UPDATE TYPE: RedHat/CentOS (YUM - All Packages)
+          UPDATE TASK CHANGED: {{ yum_upgrade_result.changed | default(false) }}
+
+          PACKAGE CHANGES:
+          {% if redhat_package_changes is defined and (redhat_package_changes.stdout | default('"'"''"'"') | trim) %}
+          {{ redhat_package_changes.stdout }}
+          {% else %}
+          No package version changes detected.
+          {% endif %}
+
+          YUM MODULE RESULT:
+          {{ yum_upgrade_result | to_nice_json }}
+          {% else %}
+          UPDATE TYPE: No updates performed (RedHat family)
+          STATUS: No RedHat-based update task result was captured.
+          {% endif %}
+
+          ================================================================================
+          END OF LOG
+          ================================================================================
+      when: ansible_os_family == "RedHat"
+      tags:
+        - logging
+
+    - name: Save update output to log file on control node
+      delegate_to: localhost
+      become: false
+      ansible.builtin.copy:
+        content: "{{ update_output }}"
+        dest: "{{ log_file_path }}"
+        mode: '0644'
+      when: update_output is defined
+      tags:
+        - logging
+
+    ############################################################################
+    # STEP 6: Final Notification and Summary
+    ############################################################################
+    - name: Display completion summary
+      ansible.builtin.debug:
+        msg:
+          - "=========================================================================="
+          - "SYSTEM UPDATE COMPLETED SUCCESSFULLY"
+          - "=========================================================================="
+          - "Environment: {{ target_env | default('all') }}"
+          - "Target Host: {{ inventory_hostname }}"
+          - "OS: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+          - "Log Location: {{ log_file_path }}"
+          - "=========================================================================="
+      tags:
+        - notification
+
+  post_tasks:
+    ############################################################################
+    # FINAL SUMMARY - Run Once Per Playbook Execution
+    ############################################################################
+    - name: Print final summary message
+      delegate_to: localhost
+      become: false
+      ansible.builtin.debug:
+        msg:
+          - ""
+          - "╔════════════════════════════════════════════════════════════════════════╗"
+          - "║           SYSTEM UPDATE PLAYBOOK EXECUTION COMPLETED                   ║"
+          - "╚════════════════════════════════════════════════════════════════════════╝"
+          - ""
+          - "System updates have been successfully performed on the following hosts:"
+          - "{{ ansible_play_hosts | join(', ') }}"
+          - ""
+          - "Log files are available at: {{ log_date_dir }}/"
+          - ""
+          - "Review individual host logs:"
+          - "{{ ansible_play_hosts | map('regex_replace', '^(.*)$', '  - ' + log_date_dir + '/\\1') | join('\n') }}"
+          - ""
+          - "╔════════════════════════════════════════════════════════════════════════╗"
+          - "║ Next Steps:                                                            ║"
+          - "║ 1. Review logs for any errors or warnings                             ║"
+          - "║ 2. Verify critical services are running                               ║"
+          - "║ 3. Check if any systems require a reboot                              ║"
+          - "╚════════════════════════════════════════════════════════════════════════╝"
+          - ""
+      run_once: true
+      tags:
+        - notification
